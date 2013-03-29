@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>LED and me</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/bootstrap.min.css" rel="stylesheet">
+    <link href="/bootstrap-responsive.min.css" rel="stylesheet">
+    <link href="/application.css" rel="stylesheet">
+    <script type="text/javascript" src="/jquery-1.9.1.min.js"></script>
+    <script type="text/javascript" src="/bootstrap.min.js"></script>
+    <script type="text/javascript" src="http://<%= request.env["SERVER_NAME"] %>:9090/faye/client.js"></script>
+    <script type="text/javascript">
+      $(function() {
+        var faye = new Faye.Client('http://<%= request.env["SERVER_NAME"] %>:9090/faye');
+        var token = Math.random().toString(36).substring(8);
+
+        faye.subscribe("/messages/new", function(data) {
+          if(data.token != token){
+            var control = $("#" + data.id)[0];
+
+            if(data.type == "checkbox") {
+              control.checked = data.value;
+            } else if(data.type == "range") {
+              control.value = data.value;
+            }
+          }
+        });
+
+        $("[type=checkbox]").change(function() {
+          push(this.id, this.checked, this.type);
+        });
+
+        $("[type=range]").change(function() {
+          push(this.id, this.value, this.type);
+        });
+
+        function push(id, value, type){
+          $.ajax({
+            type: "POST",
+            url: 'http://<%= request.env["SERVER_NAME"] %>:9090/faye',
+            dataType: 'json',
+            data: "message={ \"channel\": \"/messages/new\", \"data\": { \"id\": \"" + id + "\", \"value\": " + value + ", \"type\": \"" + type + "\", \"token\": \"" + token + "\" } }",
+          });
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <%= yield %>
+    </div>
+  </body>
+</html>
