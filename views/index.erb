@@ -1,27 +1,85 @@
-<div class="panel">
-  <h2 class="panel-heading">Test</h2>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>LED and me</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/bootstrap.min.css" rel="stylesheet">
+    <link href="/bootstrap-responsive.min.css" rel="stylesheet">
+    <link href="/application.css" rel="stylesheet">
+    <script type="text/javascript" src="/jquery-1.9.1.min.js"></script>
+    <script type="text/javascript" src="/bootstrap.min.js"></script>
+    <script type="text/javascript" src="http://<%= request.env["SERVER_NAME"] %>:9090/faye/client.js"></script>
+    <script type="text/javascript">
+      $(function() {
+        var faye = new Faye.Client('http://<%= request.env["SERVER_NAME"] %>:9090/faye');
+        var token = Math.random().toString(36).substring(8);
+        var interval = 0;
+        var timer;
 
-  <label for="led1">Led 1</label>
-  <input type="checkbox" id="led1">
-  <br />
+        faye.subscribe("/messages/new", function(data) {
+          if(data.token != token){
+            var control = $("#" + data.id)[0];
 
-  <label for="led2">Led 2</label>
-  <input type="checkbox" id="led2">
-  <br />
+            if(data.type == "checkbox") {
+              control.checked = data.value;
+            } else if(data.type == "range") {
+              control.value = data.value;
+            }
+          }
+        });
 
-  <div>Range 1</div>
-  <input id="range1" type="range" name="points" min="1" max="25">
-  <br /><br />
+        $("[type=checkbox]").change(function() {
+          push(this.id, this.checked, this.type);
+        });
 
-  <div>Range 2</div>
-  <input id="range2" type="range" name="points" min="1" max="16">
-  <br /><br />
+        $("[type=range]").change(function() {
+          clearTimeout(timer);
+          var element = this;
+          timer = setTimeout(function(){
+            push(element.id, element.value, element.type);
+          }, interval);
+        });
 
-  <div>Range 3</div>
-  <input id="range3" type="range" name="points" min="0" max="5">
-  <br /><br />
+        function push(id, value, type){
+          $.ajax({
+            type: "POST",
+            url: 'http://<%= request.env["SERVER_NAME"] %>:9090/faye',
+            dataType: 'json',
+            data: "message={ \"channel\": \"/messages/new\", \"data\": { \"id\": \"" + id + "\", \"value\": " + value + ", \"type\": \"" + type + "\", \"token\": \"" + token + "\" } }",
+          });
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="panel">
+        <h2 class="panel-heading">Test</h2>
 
-  <div>Range 4</div>
-  <input id="range4" type="range" name="points" min="0" max="1" style="width:80px">
-  <br /><br />
-</div>
+        <label for="led1">Led 1</label>
+        <input type="checkbox" id="led1">
+        <br />
+
+        <label for="led2">Led 2</label>
+        <input type="checkbox" id="led2">
+        <br />
+
+        <div>Range 1</div>
+        <input id="range1" type="range" name="points" min="1" max="25">
+        <br /><br />
+
+        <div>Range 2</div>
+        <input id="range2" type="range" name="points" min="1" max="16">
+        <br /><br />
+
+        <div>Range 3</div>
+        <input id="range3" type="range" name="points" min="0" max="5">
+        <br /><br />
+
+        <div>Range 4</div>
+        <input id="range4" type="range" name="points" min="0" max="1" style="width:80px">
+        <br /><br />
+      </div>
+    </div>
+  </body>
+</html>
