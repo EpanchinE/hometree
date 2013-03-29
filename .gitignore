@@ -1,0 +1,9 @@
+.bundle
+log/*.log
+tmp/
+.env
+.env.*
+.DS_Store
+*~
+*.sublime-project
+*.sublime-workspace
