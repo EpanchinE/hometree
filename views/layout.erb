@@ -13,6 +13,8 @@
       $(function() {
         var faye = new Faye.Client('http://<%= request.env["SERVER_NAME"] %>:9090/faye');
         var token = Math.random().toString(36).substring(8);
+        var interval = 50;
+        var timer;
 
         faye.subscribe("/messages/new", function(data) {
           if(data.token != token){
@@ -31,7 +33,11 @@
         });
 
         $("[type=range]").change(function() {
-          push(this.id, this.value, this.type);
+          clearTimeout(timer);
+          var element = this;
+          timer = setTimeout(function(){
+            push(element.id, element.value, element.type);
+          }, interval);
         });
 
         function push(id, value, type){
